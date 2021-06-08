@@ -3,6 +3,7 @@ from aula import app, conn, bcrypt
 from aula.forms import MessageSendForm, MessageSearchForm
 from aula.models import select_Users, search_Users, get_user_messages, send_message_to, find_user_groups
 from flask_login import login_required, current_user
+import fnmatch
 
 
 Message = Blueprint('Message', __name__)
@@ -51,6 +52,9 @@ def message():
             isSensitive = request.form.get('isSensitive')
             sender = current_user.get_key()
 
+            
+
+
             final_message = [recipients, subject, isSensitive, message]
             send_message_to(final_message,sender)
 
@@ -65,23 +69,18 @@ def send_message_Users(recipient_form):
     if not current_user.is_authenticated:
         flash('Please Login.','danger')
         return redirect(url_for('Login.login'))
-
-    recipients = request.form
-    print(recipients)
-
     
     form = MessageSendForm()
   
-        
-
     results = []
     search_string = recipient_form.recipients.data
     
-    
     if search_string != '':
         results = search_Users(search_string)
-        
-    print(results)
+        # Remove current user from search results
+        results = [i for i in results if i[1] != current_user.name.lower()]
+
+    print (results)
     if not results:
         flash('No results found!')
         return redirect("http://localhost:5000/home")
@@ -98,11 +97,8 @@ def send_message_Groups():
 
     form = MessageSendForm()
     
-
     results = find_user_groups(current_user.id)
         
-        
-    
     if not results:
         flash('No results found!')
         return redirect('/')
