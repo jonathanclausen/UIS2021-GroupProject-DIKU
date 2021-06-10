@@ -9,7 +9,7 @@ Group Project for UIS 2021 course at DIKU.
 There are multiple users to login with. Here are a list of users.
 
 Name | Username | Password
------------- | -------------
+------------ | ------------- | ------------- 
 Jan | jan1234 | UIS
 Carl | carl1234 | UIS
 Louise | username | UIS
