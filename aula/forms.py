@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, IntegerField, SelectMultipleField, TextAreaField
+from wtforms.fields.simple import HiddenField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 
 class UserLoginForm(FlaskForm):
@@ -21,6 +22,7 @@ class MessageSearchForm(FlaskForm):
 
 class MessageSendForm(FlaskForm):
     choices=[('w', 'w')]
+    isGroup = HiddenField("isGroup")
     recipients = SelectMultipleField('Vælg modtagere', validators=[DataRequired()],choices=choices)
     subject = StringField('Indsæt emne', validators=[DataRequired()])
     isSensitive = BooleanField('Følsom data?')
