@@ -2,59 +2,29 @@ DELETE FROM Person;
 DELETE FROM Student;
 DELETE FROM Teacher;
 DELETE FROM Guardian;
+DELETE FROM GuardedBy;
 DELETE FROM Bundle;
-DELETE FROM PersonBundle;
+DELETE FROM BundledWith;
+DELETE FROM MessageThread;
+DELETE FROM CommunicatesWith;
 DELETE FROM Message;
-DELETE FROM PersonMessage;
 DROP TRIGGER IF EXISTS checkBundleAdmin ON Bundle;
 
 --------------------------------------
 --    Procedures for inserting      --
 --------------------------------------
 
-CREATE OR REPLACE PROCEDURE insertStudentGuardianPair (
-	schoolName			Student.school%TYPE,
-	guardianUsername	Person.username%TYPE,
-	studentUsername			Person.username%TYPE
-)
-LANGUAGE SQL
-AS $$
-WITH guard_key AS
-		(INSERT INTO public.Student(id, guardian_id, school)
-		 	SELECT p2.id, p1.id, schoolName
-			FROM Person p1, Person p2
-			WHERE p1.username=guardianUsername AND p2.username=studentUsername
-		 RETURNING id, guardian_id)
-INSERT INTO public.Guardian(id, student_id)
-	SELECT guard_key.guardian_id, guard_key.id
-	FROM guard_key;
-$$;
-
 CREATE OR REPLACE PROCEDURE insertBundle (
-	bundleName		VARCHAR(120),
+	bundleName		Bundle.name%TYPE,
 	admin_username	Person.username%TYPE,
 	offi			BOOLEAN
 )
 LANGUAGE SQL
 AS $$
-	INSERT INTO public.Bundle(a_id, name, isOfficial)
+	INSERT INTO public.Bundle(adminID, name, isOfficial)
 	SELECT id, bundleName, offi
 	FROM Person
 	WHERE username = admin_username
-$$;
-
-CREATE OR REPLACE PROCEDURE insertPersonBundle (
-	uname		Person.username%TYPE,
-	bundlename	Bundle.name%TYPE
-)
-LANGUAGE SQL
-AS $$
-	WITH something AS
-		(SELECT id FROM Person WHERE username=uname)
-	INSERT INTO public.PersonBundle(g_id, u_id)
-		SELECT g_id, something.id
-		FROM Bundle, something
-		WHERE bundle.name=bundlename;
 $$;
 
 
@@ -70,7 +40,7 @@ AS $$
 			new.isOfficial AND
 			EXISTS (SELECT *
 					FROM Teacher
-					WHERE Teacher.id = new.a_id)
+					WHERE Teacher.id = new.adminID)
 		THEN
 			return new;
 		ELSE
@@ -98,9 +68,33 @@ INSERT INTO public.Person(name, username, password) VALUES ('Will.I.Am', 'airpla
 INSERT INTO public.Person(name, username, password) VALUES ('Beyonce', 'username', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- mor
 INSERT INTO public.Person(name, username, password) VALUES ('Inger', 'IngerBabe123@gmail.com', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- lærer
 
-CALL insertStudentGuardianPair('Sandkassehaven 69', 'byggemand', 'airplanelover3000');
-CALL insertStudentGuardianPair('Sandkassehaven 69', 'username', 'airplanelover3000');
+INSERT INTO public.Student(id, school)
+	SELECT id, 'Sandkassehaven 69'
+	FROM Person
+	WHERE username = 'airplanelover3000';
 
+INSERT INTO public.Guardian(id)
+	SELECT id
+	FROM Person
+	WHERE username = 'byggemand';
+INSERT INTO public.Guardian(id)
+	SELECT id
+	FROM Person
+	WHERE username = 'username';
+
+WITH guardID AS
+	(SELECT id FROM Person WHERE username = 'byggemand')
+INSERT INTO public.GuardedBy(studentID, guardianID)
+	SELECT Person.id, guardID.id
+	FROM Person, guardID
+	WHERE person.username = 'airplanelover3000';
+
+WITH guardID AS
+	(SELECT id FROM Person WHERE username = 'username')
+INSERT INTO public.GuardedBy(studentID, guardianID)
+	SELECT Person.id, guardID.id
+	FROM Person, guardID
+	WHERE person.username = 'airplanelover3000';
 
 INSERT INTO public.Teacher(id, school)
 	SELECT id, 'Sandkassehaven 69'
@@ -110,6 +104,12 @@ INSERT INTO public.Teacher(id, school)
 
 CALL insertBundle ( '1. klasse', 'IngerBabe123@gmail.com', TRUE);
 
-CALL insertPersonBundle ('airplanelover3000', '1. klasse');
-CALL insertPersonBundle ('IngerBabe123@gmail.com', '1. klasse');
+INSERT INTO public.BundledWith(bundleID, personID)
+	SELECT Bundle.bundleID, Person.id
+	FROM Bundle, Person
+	WHERE Bundle.name = '1. klasse' AND Person.username = 'airplanelover3000';
 
+INSERT INTO public.BundledWith(bundleID, personID)
+	SELECT Bundle.bundleID, Person.id
+	FROM Bundle, Person
+	WHERE Bundle.name = '1. klasse' AND Person.username = 'IngerBabe123@gmail.com';
