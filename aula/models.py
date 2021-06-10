@@ -45,22 +45,6 @@ class Person(tuple, UserMixin):
     def get_name(self):
         return (self.name)
 
-class Student(Person):
-    def __init__(self, user_data):
-        Person.__init__(self, user_data)
-        self.guardian = user_data[10]
-        self.school = user_data[11]
-
-class Guardian(Person):
-    def __init__(self, user_data):
-        Person.__init__(self, user_data)
-        self.student = user_data[10]
-
-class Teacher(Person):
-    def __init__(self, user_data):
-        Person.__init__(self, user_data)
-        self.grades = user_data[10]
-
 def select_Users(username):
     cur = conn.cursor()
     sql = """
