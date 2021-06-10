@@ -55,7 +55,7 @@ def message():
             if request.form.get('isGroup'):
                 recipients = request.form.get('recipients')
                 # TODO: Create a list of group member id's
-                # model.find_group_members
+                # model.find_group_member
 
             final_message = [recipients, subject, isSensitive, message]
             send_message_to(final_message,sender)
