@@ -9,7 +9,7 @@
                 {% for msg in messages %}
                 <div class="content-section">
                     <h5>{{ msg[6] }}</h5>
-                    <small>{{ msg[5] }}</small><span><small><p>Participants: {% for from in msg[8] %} {{ from[0] }}, {%endfor%}</p> </small></span>
+                    <small>{{ msg[5] }}</small><span><small><p>Participants: {% for from in msg[8] %} {{ from }}, {%endfor%}</p> </small></span>
                     <p>{{ msg[7] }}</p>
                 </div>
                 {%endfor%}

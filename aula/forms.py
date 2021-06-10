@@ -26,7 +26,7 @@ class MessageSendForm(FlaskForm):
     recipients = SelectMultipleField('Vælg modtagere', validators=[DataRequired()],choices=choices)
     subject = StringField('Indsæt emne', validators=[DataRequired()])
     isSensitive = BooleanField('Følsom data?')
-    message = TextAreaField('Indsæt besked')
+    message = TextAreaField('Indsæt besked', validators=[DataRequired()])
     submit = SubmitField('Send')
 
 class UserSearchForm(FlaskForm):

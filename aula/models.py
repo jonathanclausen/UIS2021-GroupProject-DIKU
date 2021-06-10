@@ -2,7 +2,7 @@
 from datetime import datetime
 from re import search
 from aula import conn, login_manager
-from flask_login import UserMixin
+from flask_login import UserMixin, current_user
 from psycopg2 import sql
 
 @login_manager.user_loader
@@ -68,7 +68,7 @@ def select_Users(username):
     WHERE username = %s
     """
     cur.execute(sql, (username,))
-    user = Person(cur.fetchone()) if cur.rowcount > 0 else None;
+    user = Person(cur.fetchone()) if cur.rowcount > 0 else None
     cur.close()
     return user
 
@@ -79,12 +79,13 @@ def search_Users(query):
         sql = """
             SELECT tmp.uname, tmp.gname, tmp.u_id
                 FROM ((Person p
-                    FULL JOIN PersonBundle pb ON p.id = pb.u_id) ppb
-                    FULL JOIN Bundle b ON ppb.g_id = b.g_id)
-                    AS tmp (u_id, uname, username, password, g_id, uid, g_id2, a_id, gname, isofficial)
+                    FULL JOIN BundledWith pb ON p.id = pb.personID) ppb
+                    FULL JOIN Bundle b ON ppb.bundleID = b.bundleid)
+                    AS tmp (u_id, uname, username, password, bundleID, uid, g_id2, a_id, gname, isofficial)
+                WHERE tmp.u_id != %s
         """
 
-        cur.execute(sql)
+        cur.execute(sql, (current_user.get_key(),))
         # Below assumes that no group exists with no members!
         result = []
         for record in cur:
@@ -106,37 +107,59 @@ def search_Users(query):
 
 
 def get_message_participants(msg_id):
-    cur = conn.cursor()
-    sql = """
-    SELECT name
-    FROM personmessage join person
-    ON personmessage.U_id = person.id
-    WHERE personmessage.m_id = %s
-    """
-    cur.execute(sql, (msg_id,))
-    parts = cur.fetchall() if cur.rowcount > 0 else None;
-    cur.close()
-    parts = [list(ele) for ele in parts]
+    with conn.cursor() as cur:
+        sql = """
+        WITH threads AS 
+        (SELECT *
+        FROM message
+        JOIN  messagethread 
+        ON threadID = messagethread.id
+        WHERE messageid = %s)
+
+        SELECT DISTINCT name 
+            FROM (threads
+                JOIN communicatesWith ON threads.threadID = communicatesWith.threadID) tmp
+                JOIN PERSON on tmp.personID = person.id OR tmp.senderid = person.id
+        """ 
+        cur.execute(sql, (msg_id,))
+        parts = cur.fetchall() if cur.rowcount > 0 else None
+    # removing current user from message participants.
+    parts = filter(lambda x : x != current_user.name, [ele[0] for ele in parts]) if parts is not None else []
     return parts
 
 def get_user_messages(id):
-    cur = conn.cursor()
-    sql = """
-    SELECT id, readstate, file, isimportant, issensitive, date, subject, text FROM personmessage join message 
-    ON personmessage.M_id = message.id
-    WHERE u_id = %s
-    """
-    cur.execute(sql, (id,))
-    messages = cur.fetchall() if cur.rowcount > 0 else None;
-    
-    msgs = [list(ele) for ele in messages]
+    with conn.cursor() as cur:
+        sql = """
+        SELECT messageID, readState, file, isImportant, isSensitive, datetime, subject, text
+        FROM (CommunicatesWith
+            JOIN MessageThread ON id = threadID) tmp
+            JOIN Message m ON m.threadID = tmp.threadID
+        WHERE personid = %s or senderid = %s
+        ORDER BY datetime DESC
+        """
 
-    cur.close()
+        cur.execute(sql, (id,id))
+        messages = cur.fetchall() if cur.rowcount > 0 else None
+        
+    msgs = [list(ele) for ele in messages] if messages is not None else []
+
     for elm in msgs:
         elm.append(get_message_participants(elm[0]))
-
     return msgs
 
+def get_group_members(group_id):
+    with conn.cursor() as cur:
+        sql = """
+        SELECT personID
+        FROM Bundle b
+	        JOIN BundledWith bw ON b.bundleID = bw.bundleID
+        WHERE b.bundleID = %s
+        """
+        cur.execute(sql, (group_id,))
+        ids = []
+        for record in cur:
+            ids.append(record[0])
+    return ids
 
 def send_message_to(message,sender):
     with conn.cursor() as cur:
@@ -144,30 +167,40 @@ def send_message_to(message,sender):
         isSensitive = True if message[2] is not None else False
         subject = message[1]
         message = message[3]
+
         sql = """
-            WITH m_key AS
-		        (INSERT INTO Message(isSensitive, subject, text)
-                    VALUES (%s, %s, %s)
-		        RETURNING id),
-            forget AS
-                (INSERT INTO PersonMessage(m_id, u_id, readState)
-                    SELECT m_key.id, %s, FALSE
-                    FROM m_key)
-            INSERT INTO public.PersonMessage(m_id, u_id, readState)
-	            SELECT m_key.id, %s, TRUE
-	            FROM m_key
+            WITH Thread AS
+                (INSERT INTO MessageThread(isImportant, isSensitive)
+                    VALUES (%s, %s) RETURNING id),"""
+
+        for recipient in recipients:
+            sql_recipients = """
+            forget_""" + str(recipient) + """ AS
+                (INSERT INTO CommunicatesWith(threadID, personID, readState)
+                    SELECT Thread.id, """ + str(recipient) + """, FALSE
+                    FROM Thread),"""
+                    
+            sql = sql + sql_recipients
+            
+        msg = """ 
+        INSERT INTO Message(threadID, senderID, subject, text, file)
+            SELECT Thread.id, %s, %s, %s, %s
+            FROM Thread
         """
-        cur.execute(sql, (isSensitive, subject, message, recipients, sender))
+
+        sql = sql[:-1] + msg
+        
+        cur.execute(sql, (False, isSensitive, sender, subject, message, "no file"))
         conn.commit()
         return True
-
+       
 def find_user_groups(id):
     cur = conn.cursor()
     sql = """
     WITH user_group(g_id, u_id, name) AS (
-        select g_id, u_id, name from personbundle join person
-        on u_id = person.id
-        where person.id = 2
+        select bundleID, id, name from bundledwith join person
+        on personID = person.id
+        where person.id = %s
     )
 
     select b.id, b.admin, b.name,b.is_official from bundle b(id, admin, name, is_official) join user_group

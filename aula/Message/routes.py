@@ -38,7 +38,7 @@ def message():
     if request.method == 'POST':
         if form.submitUsers.data:
             return send_message_Users(form,user_messages)
-            
+
         if form.submitGroups.data:
             return send_message_Groups(user_messages)
         
@@ -56,9 +56,7 @@ def message():
                 for rec in recipients:
                   userIds = userIds + get_group_members(rec)
                 recipients = userIds
-                print(recipients)
-                # TODO: Create a list of group member id's
-                # model.find_group_member
+               
 
             final_message = [recipients, subject, isSensitive, message]
             send_message_to(final_message,sender)
