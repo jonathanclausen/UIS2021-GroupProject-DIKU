@@ -24,6 +24,12 @@ def load_user(user_id):
     else:
         return None
 
+class Group():
+    def __init__(self, group_data):
+        self.id = (group_data[0])
+        self.admin = (group_data[1])
+        self.name = (group_data[2])
+        self.is_official = (group_data[3])
 
 class Person(tuple, UserMixin):
     def __init__(self, user_data):
@@ -158,16 +164,21 @@ def send_message_to(message,sender):
 def find_user_groups(id):
     cur = conn.cursor()
     sql = """
-    SELECT b.g_id, b.name
-    FROM PersonBundle pb
-        JOIN Bundle b ON pb.g_id = b.g_id
-    WHERE pb.u_id = %s
+    WITH user_group(g_id, u_id, name) AS (
+        select g_id, u_id, name from personbundle join person
+        on u_id = person.id
+        where person.id = 2
+    )
+
+    select b.id, b.admin, b.name,b.is_official from bundle b(id, admin, name, is_official) join user_group
+    on b.id = user_group.g_id
+
     """
     
     cur.execute(sql, (id,))
 
     groups = cur.fetchall()
-    #groups = cur.fetchall() if cur.rowcount > 0 else None;
+    groups = [Group(grp) for grp in groups]  
 
     cur.close()
     return groups
