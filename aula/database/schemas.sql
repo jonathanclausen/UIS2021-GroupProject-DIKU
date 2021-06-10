@@ -1,61 +1,66 @@
-DROP TABLE IF EXISTS PersonMessage;
-DROP TABLE IF EXISTS PersonBundle;
+DROP TABLE IF EXISTS CommunicatesWith;
+DROP TABLE IF EXISTS BundledWith;
+DROP TABLE IF EXISTS GuardedBy;
 DROP TABLE IF EXISTS Bundle;
 DROP TABLE IF EXISTS Teacher;
-DROP TABLE IF EXISTS Guardian CASCADE;
+DROP TABLE IF EXISTS Guardian;
 DROP TABLE IF EXISTS Student;
-DROP TABLE IF EXISTS Person;
 DROP TABLE IF EXISTS Message;
+DROP TABLE IF EXISTS Person;
+DROP TABLE IF EXISTS MessageThread;
 
 
 ----------------------------------------
 --            Basic schemas           --
 ----------------------------------------
-CREATE TABLE IF NOT EXISTS Message(
-	id		INTEGER GENERATED ALWAYS AS IDENTITY,
-	file		VARCHAR(120),
+CREATE TABLE IF NOT EXISTS MessageThread(
+	id			INTEGER GENERATED ALWAYS AS IDENTITY,
 	isImportant	BOOLEAN,
 	isSensitive	BOOLEAN,
-	date		DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	subject		TEXT,
-	text		TEXT,
 	PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS Person(
-	id		INTEGER GENERATED ALWAYS AS IDENTITY,
+	id			INTEGER GENERATED ALWAYS AS IDENTITY,
 	name		VARCHAR(120),
 	username	VARCHAR(120) UNIQUE NOT NULL,
 	password	VARCHAR(120) NOT NULL,
 	PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS Message(
+	messageID	INTEGER GENERATED ALWAYS AS IDENTITY,
+	threadID	INTEGER,
+	senderID	INTEGER,
+	subject		TEXT,
+	text		TEXT,
+	datetime	TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	file		VARCHAR(120),
+	PRIMARY KEY (messageID)
+);
+ALTER TABLE Message ADD FOREIGN KEY (threadID)
+	REFERENCES MessageThread(id) ON DELETE CASCADE;
+ALTER TABLE Message ADD FOREIGN KEY (senderID)
+	REFERENCES Person(id) ON DELETE SET DEFAULT;
+
 CREATE TABLE IF NOT EXISTS Student(
-	id		INTEGER,
-	guardian_id	INTEGER,
+	id			INTEGER,
 	school		VARCHAR(120),
-	PRIMARY KEY (id, guardian_id)
+	PRIMARY KEY (id)
 );
 ALTER TABLE Student ADD FOREIGN KEY (id)
 	REFERENCES Person(id) ON DELETE CASCADE;
 
 
 CREATE TABLE IF NOT EXISTS Guardian(
-	id		INTEGER,
-	student_id	INTEGER,
-	PRIMARY KEY (id, student_id)
+	id			INTEGER,
+	PRIMARY KEY (id)
 );
 ALTER TABLE Guardian ADD FOREIGN KEY (id)
 	REFERENCES Person(id) ON DELETE CASCADE;
-ALTER TABLE Guardian ADD FOREIGN KEY (student_id, id)
-	REFERENCES Student(id, guardian_id) ON DELETE CASCADE;
-
--- Below is set here, as we need to create Guardian before we can reference it.
-ALTER TABLE Student ADD FOREIGN KEY (guardian_id, id)
-	REFERENCES Guardian(id, student_id) ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS Teacher(
-	id		INTEGER,
+	id			INTEGER,
 	school		VARCHAR(120),
 	PRIMARY KEY (id, school)
 );
@@ -63,39 +68,49 @@ ALTER TABLE Teacher ADD FOREIGN KEY (id)
 	REFERENCES Person(id) ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS Bundle(
-	g_id		INTEGER GENERATED ALWAYS AS IDENTITY,
-	a_id		INTEGER,
-	name		VARCHAR(50),
+	bundleID	INTEGER GENERATED ALWAYS AS IDENTITY,
+	adminID		INTEGER,
+	name		VARCHAR(120),
 	isOfficial	BOOLEAN,
-	PRIMARY KEY (g_id)
+	PRIMARY KEY (bundleID)
 );
-ALTER TABLE Bundle ADD FOREIGN KEY (a_id)
+ALTER TABLE Bundle ADD FOREIGN KEY (adminID)
 	REFERENCES Person(id) ON DELETE SET NULL;
 
 
 ----------------------------------------
 --        relational schemas          --
 ----------------------------------------
-
-CREATE TABLE IF NOT EXISTS PersonBundle(
-	g_id		INTEGER,
-	u_id		INTEGER,
-	PRIMARY KEY (g_id, u_id)
+CREATE TABLE IF NOT EXISTS GuardedBy(
+	studentID	INTEGER,
+	guardianID	INTEGER,
+	PRIMARY KEY (studentID, guardianID)
 );
-ALTER TABLE PersonBundle ADD FOREIGN KEY (g_id)
-	REFERENCES Bundle(g_id) ON DELETE CASCADE;
-ALTER TABLE PersonBundle ADD FOREIGN KEY (u_id)
+ALTER TABLE GuardedBy ADD FOREIGN KEY (studentID)
+	REFERENCES Person(id) ON DELETE CASCADE;
+ALTER TABLE GuardedBy ADD FOREIGN KEY (guardianID)
 	REFERENCES Person(id) ON DELETE CASCADE;
 
-CREATE TABLE IF NOT EXISTS PersonMessage(
-	m_id		INTEGER,
-	u_id		INTEGER,
-	readState	BOOLEAN,
-	PRIMARY KEY (m_id, u_id)
+
+CREATE TABLE IF NOT EXISTS BundledWith(
+	bundleID	INTEGER,
+	personID	INTEGER,
+	PRIMARY KEY (bundleID, personID)
 );
-ALTER TABLE PersonMessage ADD FOREIGN KEY (m_id)
-	REFERENCES Message(id) ON DELETE CASCADE;
-ALTER TABLE PersonMessage ADD FOREIGN KEY (u_id)
+ALTER TABLE BundledWith ADD FOREIGN KEY (bundleID)
+	REFERENCES Bundle(bundleID) ON DELETE CASCADE;
+ALTER TABLE BundledWith ADD FOREIGN KEY (personID)
+	REFERENCES Person(id) ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS CommunicatesWith(
+	threadID	INTEGER,
+	personID	INTEGER,
+	readState	BOOLEAN,
+	PRIMARY KEY (threadID, personID)
+);
+ALTER TABLE CommunicatesWith ADD FOREIGN KEY (threadID)
+	REFERENCES MessageThread(id) ON DELETE CASCADE;
+ALTER TABLE CommunicatesWith ADD FOREIGN KEY (personID)
 	REFERENCES Person(id) ON DELETE CASCADE;
 
 ------------------------------------------------------
