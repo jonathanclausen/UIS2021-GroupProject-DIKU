@@ -3,6 +3,7 @@ Group Project for UIS 2021 course at DIKU.
 
 ### How to run
 1. Install required packages from ´requirements.txt´
+2. Setup
 2. Run with ´python3 run.py´
 
 ### Logging in
@@ -15,3 +16,4 @@ Carl | carl1234 | UIS
 Louise | username | UIS
 Inger | SuperMANN1234@gmail.com | UIS
 
+h
