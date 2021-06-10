@@ -7,8 +7,11 @@ Group Project for UIS 2021 course at DIKU.
 
 ### Logging in
 There are multiple users to login with. Here are a list of users.
-1. name: Jan, username: jan1234, password: UIS
-2. name: Carl, username: carl1234, password: UIS
-3. name: Louise username: username, password: UIS
-4. name: Inger, username: SuperMANN1234@gmail.com password: UIS
+
+Name | Username | Password
+------------ | -------------
+Jan | jan1234 | UIS
+Carl | carl1234 | UIS
+Louise | username | UIS
+Inger | SuperMANN1234@gmail.com | UIS
 
