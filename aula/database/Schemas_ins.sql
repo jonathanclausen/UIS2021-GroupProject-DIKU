@@ -63,53 +63,53 @@ FOR EACH ROW
 --    Example database insert       --
 --------------------------------------
 
-INSERT INTO public.Person(name, username, password) VALUES ('B.O.B.', 'byggemand', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- far
-INSERT INTO public.Person(name, username, password) VALUES ('Will.I.Am', 'airplanelover3000', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- barn
-INSERT INTO public.Person(name, username, password) VALUES ('Beyonce', 'username', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- mor
-INSERT INTO public.Person(name, username, password) VALUES ('Inger', 'IngerBabe123@gmail.com', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- lærer
+INSERT INTO public.Person(name, username, password) VALUES ('Jan', 'jan1234', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- far
+INSERT INTO public.Person(name, username, password) VALUES ('Carl', 'carl1234', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- barn
+INSERT INTO public.Person(name, username, password) VALUES ('Louise', 'username', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- mor
+INSERT INTO public.Person(name, username, password) VALUES ('Inger', 'SuperMANN1234@gmail.com', '$2b$12$KFkp1IEMGT4QrWwjPGhE3ejOv6Z3pYhx/S4qOoFbanR2sMiZqgeJO'); -- lærer
 
 INSERT INTO public.Student(id, school)
 	SELECT id, 'Sandkassehaven 69'
 	FROM Person
-	WHERE username = 'airplanelover3000';
+	WHERE username = 'carl1234';
 
 INSERT INTO public.Guardian(id)
 	SELECT id
 	FROM Person
-	WHERE username = 'byggemand';
+	WHERE username = 'jan1234';
 INSERT INTO public.Guardian(id)
 	SELECT id
 	FROM Person
 	WHERE username = 'username';
 
 WITH guardID AS
-	(SELECT id FROM Person WHERE username = 'byggemand')
+	(SELECT id FROM Person WHERE username = 'jan1234')
 INSERT INTO public.GuardedBy(studentID, guardianID)
 	SELECT Person.id, guardID.id
 	FROM Person, guardID
-	WHERE person.username = 'airplanelover3000';
+	WHERE person.username = 'carl1234';
 
 WITH guardID AS
 	(SELECT id FROM Person WHERE username = 'username')
 INSERT INTO public.GuardedBy(studentID, guardianID)
 	SELECT Person.id, guardID.id
 	FROM Person, guardID
-	WHERE person.username = 'airplanelover3000';
+	WHERE person.username = 'carl1234';
 
 INSERT INTO public.Teacher(id, school)
 	SELECT id, 'Sandkassehaven 69'
 	FROM Person
-	WHERE username='IngerBabe123@gmail.com';
+	WHERE username='SuperMANN1234@gmail.com';
 
 
-CALL insertBundle ( '1. klasse', 'IngerBabe123@gmail.com', TRUE);
-
-INSERT INTO public.BundledWith(bundleID, personID)
-	SELECT Bundle.bundleID, Person.id
-	FROM Bundle, Person
-	WHERE Bundle.name = '1. klasse' AND Person.username = 'airplanelover3000';
+CALL insertBundle ( '1. klasse', 'SuperMANN1234@gmail.com', TRUE);
 
 INSERT INTO public.BundledWith(bundleID, personID)
 	SELECT Bundle.bundleID, Person.id
 	FROM Bundle, Person
-	WHERE Bundle.name = '1. klasse' AND Person.username = 'IngerBabe123@gmail.com';
+	WHERE Bundle.name = '1. klasse' AND Person.username = 'carl1234';
+
+INSERT INTO public.BundledWith(bundleID, personID)
+	SELECT Bundle.bundleID, Person.id
+	FROM Bundle, Person
+	WHERE Bundle.name = '1. klasse' AND Person.username = 'SuperMANN1234@gmail.com';
