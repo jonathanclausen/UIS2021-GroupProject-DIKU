@@ -8,6 +8,8 @@ DROP TABLE IF EXISTS Student;
 DROP TABLE IF EXISTS Message;
 DROP TABLE IF EXISTS Person;
 DROP TABLE IF EXISTS MessageThread;
+DROP TRIGGER IF EXISTS checkBundleAdmin ON Bundle;
+DROP TRIGGER IF EXISTS checkGuardianRelationship ON GuardedBy;
 
 
 ----------------------------------------
@@ -113,6 +115,68 @@ ALTER TABLE CommunicatesWith ADD FOREIGN KEY (threadID)
 ALTER TABLE CommunicatesWith ADD FOREIGN KEY (personID)
 	REFERENCES Person(id) ON DELETE CASCADE;
 
-------------------------------------------------------
--- VIEWS ---------------------------------------------
-------------------------------------------------------
+--------------------------------------
+--    Procedures for inserting      --
+--------------------------------------
+
+CREATE OR REPLACE PROCEDURE insertBundle (
+	bundleName		Bundle.name%TYPE,
+	admin_username	Person.username%TYPE,
+	offi			BOOLEAN
+)
+LANGUAGE SQL
+AS $$
+	INSERT INTO public.Bundle(adminID, name, isOfficial)
+	SELECT id, bundleName, offi
+	FROM Person
+	WHERE username = admin_username
+$$;
+
+
+--------------------------------------
+--  Triggers to handle constraints  --
+--------------------------------------
+
+CREATE OR REPLACE FUNCTION checkOfficial()
+returns TRIGGER
+AS $$
+	BEGIN
+		IF
+			new.isOfficial AND
+			EXISTS (SELECT *
+					FROM Teacher
+					WHERE Teacher.id = new.adminID)
+		THEN
+			return new;
+		ELSE
+			RAISE EXCEPTION 'Official groups must be run by teachers!';
+		END IF;
+	END;
+$$ language plpgsql;
+
+
+CREATE TRIGGER checkBundleAdmin
+BEFORE INSERT OR UPDATE OF isOfficial ON Bundle
+FOR EACH ROW
+	EXECUTE PROCEDURE checkOfficial();
+
+CREATE OR REPLACE FUNCTION checkGuardian()
+RETURNS TRIGGER
+AS $$
+	BEGIN
+		IF EXISTS (SELECT *
+					FROM guardedBy
+					WHERE guardianID = OLD.guardianID)
+		THEN
+			RETURN OLD;
+		ELSE
+			DELETE FROM Person WHERE id = OLD.guardianID;
+			RETURN OLD;
+		END IF;
+	END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER checkGuardianRelationship
+AFTER DELETE ON GuardedBy
+FOR EACH ROW
+	EXECUTE PROCEDURE checkGuardian();
